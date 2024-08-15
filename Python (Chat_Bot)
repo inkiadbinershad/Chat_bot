@@ -1,0 +1,62 @@
+import re
+
+def perform_calculation(expression):
+    try:
+        # Clean up the input expression
+        expression = expression.replace(' ', '')
+
+        # Match simple arithmetic expressions
+        match = re.match(r'(\d+)([\+\-\*/])(\d+)', expression)
+        if not match:
+            return "Sorry, I can only perform basic calculations like '2 + 2'."
+
+        # Extract numbers and the operator
+        num1, operator, num2 = match.groups()
+        num1 = float(num1)
+        num2 = float(num2)
+
+        # Perform the calculation
+        if operator == '+':
+            result = num1 + num2
+        elif operator == '-':
+            result = num1 - num2
+        elif operator == '*':
+            result = num1 * num2
+        elif operator == '/':
+            if num2 == 0:
+                return "Division by zero is undefined."
+            result = num1 / num2
+        else:
+            return "Unknown operation."
+
+        return f"The result is {result}."
+    
+    except Exception as e:
+        return "There was an error processing your request."
+from transformers import BlenderbotSmallTokenizer, BlenderbotSmallForConditionalGeneration
+
+# Load the tokenizer and model
+model_name = "facebook/blenderbot_small-90M"
+tokenizer = BlenderbotSmallTokenizer.from_pretrained(model_name)
+model = BlenderbotSmallForConditionalGeneration.from_pretrained(model_name)
+
+def chat_with_bot():
+    print("AcmeBot: Hi! I'm AcmeBot. How can I assist you today?")
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in ["exit", "quit", "bye"]:
+            print("AcmeBot: Goodbye!")
+            break
+
+        # Check if the input is a calculation request
+        if any(op in user_input for op in ['+', '-', '*', '/']):
+            response = perform_calculation(user_input)
+        else:
+            # Otherwise, generate a response using the model
+            inputs = tokenizer(user_input, return_tensors="pt")
+            reply_ids = model.generate(**inputs)
+            response = tokenizer.decode(reply_ids[0], skip_special_tokens=True)
+        
+        print(f"AcmeBot: {response}")
+
+chat_with_bot()
